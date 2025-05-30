@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MISSION ACCESS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: #e0e0ff;
+      font-family: 'Segoe UI', 'Roboto Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      padding: 20px;
+      text-align: center;
+      perspective: 1000px;
+    }
+
+    #terminal {
+      width: 100%;
+      max-width: 500px;
+      background: rgba(10, 15, 30, 0.85);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7),
+                  0 0 0 1px rgba(0, 200, 255, 0.3),
+                  0 0 30px rgba(0, 150, 255, 0.2);
+      transform-style: preserve-3d;
+      animation: float 6s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotateX(1deg); }
+      50% { transform: translateY(-10px) rotateX(-1deg); }
+    }
+
+    .terminal-header {
+      background: linear-gradient(to right, #0d47a1, #1976d2);
+      padding: 18px 25px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid rgba(0, 200, 255, 0.4);
+    }
+
+    .terminal-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: white;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+      flex: 1;
+    }
+
+    .status-light {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f44336;
+      margin-right: 12px;
+      box-shadow: 0 0 10px #f44336;
+      animation: pulse-red 1.5s infinite;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    #loading {
+      padding: 60px 30px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .loading-text {
+      font-size: 2rem;
+      color: #4fc3f7;
+      text-shadow: 0 0 15px rgba(79, 195, 247, 0.8);
+      letter-spacing: 1.5px;
+      font-weight: 300;
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 15px;
+    }
+
+    .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #4fc3f7;
+      opacity: 0.6;
+      box-shadow: 0 0 10px rgba(79, 195, 247, 0.8);
+    }
+
+    .dot:nth-child(1) { animation: dot-pulse 1.5s infinite 0s; }
+    .dot:nth-child(2) { animation: dot-pulse 1.5s infinite 0.2s; }
+    .dot:nth-child(3) { animation: dot-pulse 1.5s infinite 0.4s; }
+
+    @keyframes dot-pulse {
+      0%, 100% { transform: scale(0.8); opacity: 0.4; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    #container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 35px 30px;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    #prompt {
+      font-size: 1.4rem;
+      margin-bottom: 15px;
+      line-height: 1.6;
+      color: #e0e0ff;
+      text-shadow: 0 0 8px rgba(224, 224, 255, 0.6);
+      font-weight: 300;
+    }
+
+    .input-group {
+      width: 100%;
+      position: relative;
+      margin-top: 25px; /* Added space for label */
+    }
+
+    input {
+      padding: 16px 20px;
+      font-size: 1.3rem;
+      border: none;
+      border-radius: 10px;
+      background: rgba(20, 30, 50, 0.7);
+      color: #e0f7fa;
+      width: 100%;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0, 150, 255, 0.4);
+      letter-spacing: 1.5px;
+      font-family: 'Roboto Mono', monospace;
+      backdrop-filter: blur(5px);
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 20px rgba(0, 200, 255, 0.7);
+      background: rgba(15, 25, 45, 0.9);
+      border-color: #29b6f6;
+      transform: translateY(-2px);
+    }
+
+    .input-label {
+      position: absolute;
+      top: -12px; /* Adjusted position */
+      left: 20px;
+      background: rgba(30, 50, 80, 0.9);
+      padding: 3px 12px;
+      font-size: 0.9rem;
+      color: #29b6f6;
+      border-radius: 20px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      pointer-events: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 1; /* Ensure it's above other elements */
+    }
+
+    #countdown {
+      font-size: 1.9rem;
+      font-weight: 700;
+      margin-top: 20px;
+      padding: 15px 30px;
+      background: rgba(30, 0, 0, 0.4);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 50, 50, 0.4);
+      transition: all 0.3s ease;
+      font-family: 'Roboto Mono', monospace;
+      letter-spacing: 1px;
+    }
+
+    .glow-red {
+      animation: glowRed 1s infinite;
+      box-shadow: 0 0 20px rgba(255, 50, 50, 0.6);
+    }
+
+    @keyframes glowRed {
+      0% { text-shadow: 0 0 5px rgba(255, 50, 50, 0.8); }
+      50% { text-shadow: 0 0 25px rgba(255, 50, 50, 1); }
+      100% { text-shadow: 0 0 5px rgba(255, 50, 50, 0.8); }
+    }
+
+    #status-display {
+      min-height: 40px;
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: #ff5252;
+      font-weight: 500;
+      text-shadow: 0 0 8px rgba(255, 82, 82, 0.5);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Results screen */
+    .result-screen {
+      padding: 70px 35px;
+      text-align: center;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    .result-icon {
+      font-size: 6rem;
+      margin-bottom: 35px;
+      animation: icon-appear 0.8s ease-out;
+      text-shadow: 0 0 30px currentColor;
+    }
+
+    @keyframes icon-appear {
+      0% { transform: scale(0); opacity: 0; filter: blur(10px); }
+      70% { transform: scale(1.1); opacity: 1; filter: blur(0); }
+      100% { transform: scale(1); }
+    }
+
+    .result-title {
+      font-size: 2.8rem;
+      font-weight: 800;
+      margin-bottom: 25px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .result-message {
+      font-size: 1.5rem;
+      line-height: 1.7;
+      max-width: 500px;
+      margin: 0 auto;
+      font-weight: 300;
+    }
+
+    .result-highlight {
+      color: #ffd740;
+      font-weight: 600;
+      text-shadow: 0 0 10px rgba(255, 215, 64, 0.7);
+    }
+
+    .btn {
+      margin-top: 30px;
+      padding: 14px 35px;
+      background: linear-gradient(to right, #00c853, #00b248);
+      border: none;
+      border-radius: 50px;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+  <div id="terminal">
+    <div class="terminal-header">
+      <div class="status-light"></div>
+      <div class="terminal-title">SECURE ACCESS TERMINAL</div>
+    </div>
+    
+    <div id="loading">
+      <div class="loading-text">INITIALIZING SECURITY PROTOCOL</div>
+      <div class="loading-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div id="status-display">Establishing connection...</div>
+    </div>
+
+    <div id="container">
+      <div id="prompt">ENTER ACCESS CREDENTIALS</div>
+      
+      <div class="input-group">
+        <div class="input-label">PASSCODE</div>
+        <input type="text" id="passcode" placeholder="••••" autocomplete="off" inputmode="numeric" maxlength="4" />
+      </div>
+      
+      <div class="input-group">
+        <div class="input-label">SQUARE CODE</div>
+        <input type="text" id="square" placeholder="••" autocomplete="off" maxlength="2" />
+      </div>
+      
+      <div class="input-group">
+        <div class="input-label">CIRCLE CODE</div>
+        <input type="text" id="circle" placeholder="••" autocomplete="off" maxlength="2" />
+      </div>
+      
+      <div class="input-group">
+        <div class="input-label">PARALLELOGRAM CODE</div>
+        <input type="text" id="para" placeholder="••" autocomplete="off" maxlength="2" />
+      </div>
+      
+      <div class="input-group">
+        <div class="input-label">TRIANGLE CODE</div>
+        <input type="text" id="tri" placeholder="••" autocomplete="off" maxlength="2" />
+      </div>
+      
+      <div id="countdown">TIME REMAINING: 20s</div>
+      <div id="status-display">AWAITING INPUT</div>
+    </div>
+  </div>
+
+  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+  <audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/metallic_clank.ogg" preload="auto"></audio>
+  <audio id="successSound" src="https://actions.google.com/sounds/v1/cartoon/instrument_strum.ogg" preload="auto"></audio>
+  <audio id="deniedSound" src="https://actions.google.com/sounds/v1/cartoon/metallic_clank.ogg" preload="auto"></audio>
+
+  <script>
+    // ===== CONFIGURATION =====
+    const USER_NAME = "Alan";
+    const CORRECT_PASSCODE = "1947";
+    const CORRECT_CODES = {
+      square: "00",
+      circle: "11",
+      para: "22",
+      tri: "33"
+    };
+    const INIT_TIME = 20; // seconds
+    
+    // ===== DOM REFERENCES =====
+    const dom = {
+      terminal: document.getElementById("terminal"),
+      loading: document.getElementById("loading"),
+      container: document.getElementById("container"),
+      passcode: document.getElementById("passcode"),
+      square: document.getElementById("square"),
+      circle: document.getElementById("circle"),
+      para: document.getElementById("para"),
+      tri: document.getElementById("tri"),
+      countdown: document.getElementById("countdown"),
+      statusDisplay: document.getElementById("status-display"),
+      beep: document.getElementById("beep"),
+      errorSound: document.getElementById("errorSound"),
+      successSound: document.getElementById("successSound"),
+      deniedSound: document.getElementById("deniedSound")
+    };
+    
+    // ===== STATE MANAGEMENT =====
+    const state = {
+      timeLeft: INIT_TIME,
+      countdownInterval: null,
+      initialized: false,
+      speechSupported: ('speechSynthesis' in window),
+      userInteracted: false
+    };
+    
+    // ===== UTILITY FUNCTIONS =====
+    function playAudio(audio) {
+      if (!audio) return;
+      try {
+        audio.currentTime = 0;
+        audio.play().catch(e => console.log("Audio play error:", e));
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+    }
+    
+    function speak(text, rate = 1.0, pitch = 1.0) {
+      if (!state.speechSupported || !state.userInteracted) return;
+      
+      return new Promise((resolve) => {
+        // Cancel any ongoing speech first
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+        utterance.volume = 1;
+        
+        utterance.onend = resolve;
+        utterance.onerror = resolve;
+        
+        // Force a fresh voice each time
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          utterance.voice = voices[0]; // Use first available voice
+        }
+        
+        window.speechSynthesis.speak(utterance);
+        
+        // Safety timeout
+        setTimeout(resolve, 5000);
+      });
+    }
+    
+    // ===== CORE FUNCTIONALITY =====
+    function startCountdown() {
+      state.countdownInterval = setInterval(() => {
+        state.timeLeft--;
+        dom.countdown.textContent = `TIME REMAINING: ${state.timeLeft}s`;
+        
+        if (state.timeLeft <= 10) {
+          dom.countdown.classList.add("glow-red");
+          if (state.timeLeft === 10) {
+            dom.statusDisplay.textContent = "WARNING: TIME CRITICAL";
+            dom.statusDisplay.style.color = "#ff5252";
+            if (state.speechSupported) {
+              speak("Warning. Time critical.", 1.1);
+            }
+          }
+        }
+        
+        if (state.timeLeft <= 5 && state.timeLeft > 0) {
+          playAudio(dom.beep);
+        }
+        
+        if (state.timeLeft <= 0) {
+          clearInterval(state.countdownInterval);
+          denyAccess();
+        }
+      }, 1000);
+    }
+    
+    function checkCredentials() {
+      return dom.passcode.value === CORRECT_PASSCODE &&
+             dom.square.value === CORRECT_CODES.square &&
+             dom.circle.value === CORRECT_CODES.circle &&
+             dom.para.value === CORRECT_CODES.para &&
+             dom.tri.value === CORRECT_CODES.tri;
+    }
+    
+    function denyAccess() {
+      clearInterval(state.countdownInterval);
+      
+      dom.terminal.innerHTML = `
+        <div class="result-screen">
+          <div class="result-icon" style="color: #ff5252;">✗</div>
+          <div class="result-title" style="color: #ff5252; text-shadow: 0 0 15px rgba(255,82,82,0.8);">ACCESS DENIED</div>
+          <div class="result-message">SECURITY PROTOCOL ENGAGED<br>SYSTEM LOCKDOWN INITIATED</div>
+          <button class="btn" onclick="location.reload()">TRY AGAIN</button>
+        </div>
+      `;
+      
+      playAudio(dom.deniedSound);
+      playAudio(dom.errorSound);
+      
+      if (state.speechSupported) {
+        speak("Access denied. Security protocol engaged. System lockdown initiated.", 1.0);
+      }
+    }
+    
+    function grantAccess() {
+      clearInterval(state.countdownInterval);
+      
+      dom.terminal.innerHTML = `
+        <div class="result-screen">
+          <div class="result-icon" style="color: #69f0ae;">✓</div>
+          <div class="result-title" style="color: #69f0ae; text-shadow: 0 0 15px rgba(105,240,174,0.8);">MISSION ACCOMPLISHED</div>
+          <div class="result-message">NEXT BLACK BOOK: <span class="result-highlight">LIMITED EDITION</span><br><span style="font-size: 1.1rem; opacity: 0.9;">Secure transmission incoming...</span></div>
+          <button class="btn" onclick="location.reload()">NEW MISSION</button>
+        </div>
+      `;
+      
+      playAudio(dom.successSound);
+      
+      if (state.speechSupported) {
+        speak("Mission accomplished. Access granted. You will receive the next Black Book: Limited Edition.", 1.0);
+      }
+    }
+    
+    async function initialize() {
+      if (state.initialized) return;
+      state.initialized = true;
+      
+      // Step 1: System checks
+      dom.statusDisplay.textContent = "Establishing secure connection...";
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
+      // Step 2: User authentication
+      dom.statusDisplay.textContent = "Authenticating user...";
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Step 3: Welcome user
+      dom.statusDisplay.textContent = `Welcome, ${USER_NAME}`;
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Step 4: Try voice (with fallback)
+      dom.statusDisplay.textContent = "Initializing voice protocol...";
+      
+      // Ensure voices are loaded
+      if (state.speechSupported) {
+        let voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+          await new Promise(resolve => {
+            window.speechSynthesis.onvoiceschanged = resolve;
+            setTimeout(resolve, 1000); // Fallback timeout
+          });
+          voices = window.speechSynthesis.getVoices();
+        }
+      }
+      
+      // Attempt to speak with timeout
+      try {
+        await Promise.race([
+          speak(`Welcome, ${USER_NAME}. You have ${INIT_TIME} seconds to complete authentication.`),
+          new Promise(resolve => setTimeout(resolve, 2000))
+        ]);
+      } catch (e) {
+        console.log("Voice protocol error:", e);
+      }
+      
+      // Step 5: Show UI regardless of voice status
+      dom.loading.style.display = "none";
+      dom.container.style.display = "flex";
+      dom.passcode.focus();
+      
+      // Start countdown
+      startCountdown();
+      
+      // Setup input validation
+      const inputs = [dom.passcode, dom.square, dom.circle, dom.para, dom.tri];
+      inputs.forEach(input => {
+        input.addEventListener('input', () => {
+          if (checkCredentials()) {
+            grantAccess();
+          }
+        });
+      });
+    }
+    
+    // ===== INITIALIZATION =====
+    document.addEventListener('DOMContentLoaded', () => {
+      // Start initialization on any user interaction
+      const startEvents = ['click', 'keydown', 'touchstart'];
+      
+      const startHandler = (e) => {
+        if (!state.userInteracted) {
+          state.userInteracted = true;
+          startEvents.forEach(evt => document.removeEventListener(evt, startHandler));
+          initialize();
+        }
+      };
+      
+      startEvents.forEach(evt => document.addEventListener(evt, startHandler));
+      
+      // Fallback in case no interaction happens
+      setTimeout(() => {
+        if (!state.initialized) {
+          startEvents.forEach(evt => document.removeEventListener(evt, startHandler));
+          initialize();
+        }
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
